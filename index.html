@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>我的视频</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="我的视频">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -30,13 +30,15 @@
     </div>
 
     <script>
-        // ========== 你的 Supabase 信息（已填写） ==========
+        // ========== 你的 Supabase 信息 ==========
         const SUPABASE_URL = 'https://zvibuoynjztnqyhcwvyl.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2aWJ1b3luanp0bnF5aGN3dnlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMzExNjgsImV4cCI6MjA5ODgwNzE2OH0.-OawVncjfYTn50pLgc4d52hRg9LiVbSLUKR8XHv3TNc';
-        const TABLE_NAME = 'videos'; // 确保与数据库表名一致
+        const TABLE_NAME = 'videos'; // 如果你的表名不同，改这里
         // ==========================================
 
+        // 只声明一次 supabase
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         const listEl = document.getElementById('list');
         const playerContainer = document.getElementById('player-container');
         const player = document.getElementById('player');
@@ -51,7 +53,7 @@
                     .order('created_at', { ascending: false });
 
                 if (error) {
-                    // 如果排序字段不存在，尝试不排序
+                    // 回退到不排序
                     const { data: fallbackData, error: fallbackError } = await supabase
                         .from(TABLE_NAME)
                         .select('title, video_url');
@@ -96,11 +98,8 @@
 
         loadVideos();
 
-        // 注册 Service Worker（如果已存在则更新）
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(reg => reg.update())
-                .catch(err => console.log('SW 注册失败:', err));
+            navigator.serviceWorker.register('sw.js');
         }
     </script>
 </body>
