@@ -30,37 +30,52 @@
     </div>
 
     <script>
-        // ========== 换成你自己的 Supabase 信息 ==========
+        // ========== 你的 Supabase 信息（已填写） ==========
         const SUPABASE_URL = 'https://zvibuoynjztnqyhcwvyl.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2aWJ1b3luanp0bnF5aGN3dnlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMzExNjgsImV4cCI6MjA5ODgwNzE2OH0.-OawVncjfYTn50pLgc4d52hRg9LiVbSLUKR8XHv3TNc';
-        // ================================================
+        const TABLE_NAME = 'videos'; // 确保与数据库表名一致
+        // ==========================================
 
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
         const listEl = document.getElementById('list');
         const playerContainer = document.getElementById('player-container');
         const player = document.getElementById('player');
         let videos = [];
 
         async function loadVideos() {
-            const { data, error } = await supabase
-                .from('videos')
-                .select('title, video_url')
-                .order('created_at', { ascending: false });
-            
-            if (error) {
-                listEl.innerHTML = '<li>加载失败，请检查网络</li>';
-                return;
+            listEl.innerHTML = '<li>加载中...</li>';
+            try {
+                const { data, error } = await supabase
+                    .from(TABLE_NAME)
+                    .select('title, video_url')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    // 如果排序字段不存在，尝试不排序
+                    const { data: fallbackData, error: fallbackError } = await supabase
+                        .from(TABLE_NAME)
+                        .select('title, video_url');
+                    if (fallbackError) throw fallbackError;
+                    videos = fallbackData || [];
+                } else {
+                    videos = data || [];
+                }
+                renderList();
+            } catch (e) {
+                listEl.innerHTML = `<li>加载失败：${e.message}</li>`;
+                console.error(e);
             }
-            videos = data || [];
-            renderList();
         }
 
         function renderList() {
             playerContainer.style.display = 'none';
             listEl.style.display = 'block';
-            listEl.innerHTML = videos.map((v, i) => 
-                `<li class="video-item" onclick="playVideo(${i})">${v.title}</li>`
+            if (videos.length === 0) {
+                listEl.innerHTML = '<li>暂无视频，请上传后刷新</li>';
+                return;
+            }
+            listEl.innerHTML = videos.map((v, i) =>
+                `<li class="video-item" onclick="playVideo(${i})">${v.title || '无标题'}</li>`
             ).join('');
         }
 
@@ -81,9 +96,11 @@
 
         loadVideos();
 
-        // 注册 Service Worker
+        // 注册 Service Worker（如果已存在则更新）
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => reg.update())
+                .catch(err => console.log('SW 注册失败:', err));
         }
     </script>
 </body>
